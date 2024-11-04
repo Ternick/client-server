@@ -6,7 +6,7 @@ This project is a simple client-server application implemented in C++. The serve
 
 - Multithreaded server capable of handling multiple clients
 - Custom packet protocol for communication
-- CRC32 message verefication
+- CRC32 message verification
 - Static linking of libraries
 
 ## Requirements
