@@ -30,6 +30,15 @@ bool Server::start() {
         return false;
     }
 
+    try {
+        if (client_->WriteParameter("voltage0", "raw", "33")) {
+            std::cout << "voltage0 output raw value set to 33" << std::endl;
+        }
+    }
+    catch (std::exception& ex) {
+        std::cerr << "Server -> start[" << __LINE__ << "] -> " <<  ex.what() << std::endl;
+    }
+
     std::cout << "Server listening on " << addr_ << ":" << port_ << std::endl;
 
     acceptLoop();
@@ -68,12 +77,12 @@ void Server::processPacket(const Packet& packet, int clientSocket) {
     }
     case (PacketType::COMMAND): {
         std::cout << "<<COMMAND RESPONSE>>" << std::endl;
-        std::string data;
+        std::unique_ptr<char[]> data = std::make_unique<char[]>(32);
 
         Packet response = Packet(PacketType::ERROR, "Unable to reply on COMMAND");
 
-        if (readFromFile(data)) {
-            response = Packet(PacketType::RESPONSE, data);
+        if (client_->ReadParameter("voltage0", "offset", data.get(), 32)) {
+            response = Packet(PacketType::RESPONSE, "voltage0 offset: " + std::string(data.get()));
         }
 
         std::vector<uint8_t> answerSerialized = response.serialize();
@@ -131,34 +140,6 @@ void Server::handleClient(int clientSocket) {
             clientSocket
         );
     }
-}
-
-bool Server::initialWrite2File() {
-	char temp[] = "The quick brown fox jumps over the lazy dog";
-
-	fs.open("dummydevice.bin", std::ios::out | std::ios::binary);
-
-	if (!fs.is_open()) {
-		std::cerr << "Server -> initialWrite2File -> " << std::strerror(errno) << std::endl;
-		return false;
-	}
-
-	fs.write(temp, sizeof(temp) - 1);
-	fs.close();
-	return true;
-}
-
-bool Server::readFromFile(std::string& data) {
-	fs.open("dummydevice.bin", std::ios::in | std::ios::binary);
-
-	if (!fs.is_open()) {
-		std::cerr << "Server -> readFromFile -> " << std::strerror(errno) << std::endl;
-		return false;
-	}
-
-    std::getline(fs, data);
-    fs.close();
-	return true;
 }
 
 void Server::stop() {
